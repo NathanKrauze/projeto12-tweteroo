@@ -1,41 +1,92 @@
-import express, { json } from 'express'
-import cors from 'cors'
+import express, { json } from 'express';
+import cors from 'cors';
 
-const users = [
-    {
-        username: 'bobesponja', 
-        avatar: "https://cdn.shopify.com/s/files/1/0150/0643/3380/files/Screen_Shot_2019-07-01_at_11.35.42_AM_370x230@2x.png"      
-    }
-]
+const users = [];
 
-const tweets = [
-    {
-        username: "bobesponja",
-        tweet: "Eu amo hambúrguer de siri!"
-    }
-]
+const tweets = [];
+
+let logged = false;
 
 
-const app = express()
-app.use(cors())
-app.use(json())
+const app = express();
+app.use(cors());
+app.use(json());
 
 app.post('/sign-up', (req, res) => {
 
-    const {username, avatar } = req.body;
+    const { username, avatar } = req.body;
 
-    if(!username || !avatar){
+    if (!username || !avatar) {
         res.status(422).send("dados incompletos ou inválidos")
         return
-    }
+    };
 
     users.push({
         username: username,
         avatar: avatar
+    });
+
+    logged = true;
+
+    res.status(201).send('OK');
+});
+
+app.post('/tweets', (req, res) => {
+
+    const { username, tweet } = req.body;
+
+    if (!logged) {
+        res.status(401).send("UNAUTHORIZED");
+        return;
+    };
+
+    if (!username || !tweet) {
+        res.status(422).send("informações incompletas ou inválidas");
+        return;
+    };
+
+    tweets.push({
+        username: username,
+        tweet: tweet
+    });
+
+    const tweetAvatar = users.filter(user => {
+        if (user.username === username) {
+            return user.avatar;
+        };
     })
 
-    console.log(users)
-    res.send('OK')
-})
+    res.status(201).send("OK")
+});
 
-app.listen(5000)
+app.get('/tweets', (req, res) => {
+
+    const reverseTweets = [...tweets];
+    reverseTweets.reverse();
+
+    const sendTweets = []
+
+    reverseTweets.forEach((twt, i) => {
+        if (i >= 10) {
+            return;
+        };
+
+        const tweetAvatar = users.find(user => {
+            if (user.username === twt.username) {
+                return user;
+            };
+
+        })
+
+        sendTweets.push({
+            username: twt.username,
+            avatar: tweetAvatar.avatar,
+            tweet: twt.tweet
+        })
+
+    });
+
+    res.status(201).send(sendTweets);
+});
+
+app.listen(5000);
